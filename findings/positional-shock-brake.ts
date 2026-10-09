@@ -5,8 +5,11 @@ import { seeds as sample } from './sample.ts';
 import type { Claim, Finding } from './types.ts';
 
 const AGENTS = ['Greedy', 'Lookahead', 'SenateFlood', 'HeterodoxSpecialist'];
-/** Same seed family as `runaway-no-brake.ts`, so the two findings' baselines
- *  are directly comparable rather than coincidentally close. */
+/** Same seed family as `runaway-no-brake.ts`, so the seeds are directly
+ *  comparable; the determination VALUES are not, since hf7y/american-cycle#244
+ *  (option 2) doubled this file's `maxYears` to 32 for finer quantization
+ *  (1/32-year steps instead of 1/16) while `runaway-no-brake.ts` stayed at the
+ *  shipped 16 -- resolution only, no metric or band redefinition. */
 const SEEDS = Array.from({ length: sample(200) }, (_, i) => 1030400 + i);
 const HEALTHY_LOW = 0.75, HEALTHY_HIGH = 0.85;
 const inBand = (x: number) => x >= HEALTHY_LOW && x <= HEALTHY_HIGH;
@@ -21,27 +24,28 @@ export const finding: Finding = {
     + 'it move C7-runaway-bars into the healthy 0.75-0.85 band, with comeback above zero, on 200+ seeds?',
 
   headline:
-    'MOVES THE NUMBER, BUT ONTO THE SAME TWO POINTS INCUMBENCY ALREADY OCCUPIES, NEVER BETWEEN THEM. '
-    + "Unlike the cheap shock, the positional reading is not inert: swapping `shockPositional` on at the shipped "
-    + 'magnitude (2 pips, d6<=1) leaves determination at 0.625 (identical to cheap), but sweeping magnitude and '
-    + 'frequency does move it -- 8 pips at d6<=4 still reads 0.625, 14 pips at the same frequency reads 0.875. '
-    + 'A wider hand sweep over pips in 8..14 and frequency in d6<=3..5 (15 points, not all carried as claims '
-    + 'here) never once landed inside 0.75-0.85: every point measured 0.625 or 0.875, the exact two values '
-    + "hf7y/american-cycle#180's incumbency toggle already produces on and off. Blending a partial incumbency "
-    + 'de-scale (0.1 to 0.85 of shipped, ten points) with a fixed positional shock did not find a middle value '
-    + 'either -- same two-point spectrum, no third state. Comeback stayed above zero (3-5.5%) at every point '
-    + 'measured, so that half of the acceptance bar is not the obstacle. Reads as this determination metric '
-    + 'having (at least in the region explored) two attractors and no stable state between them on this build, '
-    + 'not as a magnitude this session failed to find. #84 is not closed: the positional mechanism is real and '
-    + 'distinct from the cheap one (see `game.test.ts`, `elections.test.ts`), and it is untried in combination '
-    + 'with anything other than a flat incumbency de-scale -- a partial (not all-or-nothing) positional-only '
-    + 'brake, or pairing it with the score-side fix hf7y/american-cycle#84 also floated (a decay proportional '
-    + "to the leader's lead), is still open.",
-  stampedAt: '2026-09-07T18:00:00Z',
-  stampedOn: 'aebde8b',
+    'hf7y/american-cycle#244 OPTION 2 APPLIED (resolution only, maxYears 16->32): THE FINER GRID DID NOT LAND '
+    + 'BETWEEN THE OLD TWO POINTS -- IT PUSHED NEARLY EVERYTHING TO A NEW, HIGHER CEILING INSTEAD. All four '
+    + 'points that previously split 0.625/0.875 (cheap shock, positional at shipped/low/high magnitude) now '
+    + 'read the SAME 0.94 (30/32 years), including the one point (positional high) that used to be the lone '
+    + '0.875 outlier -- so doubling the year count did not reveal intermediate values inside the old pair, it '
+    + 'moved the whole set further from the 0.75-0.85 band than they were before. None of the four lands inside '
+    + 'it. Comeback is also no longer comparable to the 2026-09-07 stamps: at double the game length, "the '
+    + "halfway mark\" comeback is measured against is twice as deep into the game, and three of four points now "
+    + 'read at or near zero (0, 0.01, 0.01, 0.01) against the old 3-5.5%. #84 is not closed by this; if anything '
+    + "the issue's own fallback condition (\"reverse by re-deriving the metric per option 1 if that still "
+    + 'saturates at only two values\") undersells what happened here -- at the finer resolution it saturates at '
+    + 'essentially ONE value, not two, which is new information for whoever rules on #244\'s still-open band '
+    + 'question next, not something this restamp decides on its own.',
+  stampedAt: '2026-10-09T17:41:55Z',
+  stampedOn: '243aeb1',
 
   predicate(): Claim[] {
-    const base = loadConfig('tuned.json');
+    const shipped84 = loadConfig('tuned.json');
+    // hf7y/american-cycle#244 option 2: re-run at maxYears:32 for finer
+    // quantization (1/32-year steps), resolution only -- tuned.json itself
+    // stays at 16 for actual play.
+    const base: Config = { ...shipped84, game: { ...shipped84.game, maxYears: 32 } };
     const cards = loadPacks(BALANCE_PACKS);
     const run = (cfg: Config) => runawayMetrics(SEEDS, AGENTS, cards, cfg);
 
@@ -54,14 +58,14 @@ export const finding: Finding = {
     const posHigh = run(high);
 
     return [
-      { name: 'cheap shock (shipped magnitude): determination', value: cheap.determination, stamped: 0.625, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'cheap shock: comeback', value: cheap.comeback, stamped: 0.05, tolerance: 0.05, unit: 'share of games' },
-      { name: 'positional shock, shipped magnitude (2 @ d6<=1): determination', value: posShipped.determination, stamped: 0.625, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'positional shock, shipped magnitude: comeback', value: posShipped.comeback, stamped: 0.03, tolerance: 0.05, unit: 'share of games' },
-      { name: 'positional shock, low (8 @ d6<=4): determination', value: posLow.determination, stamped: 0.625, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'positional shock, low: comeback', value: posLow.comeback, stamped: 0.05, tolerance: 0.05, unit: 'share of games' },
-      { name: 'positional shock, high (14 @ d6<=4): determination', value: posHigh.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'positional shock, high: comeback', value: posHigh.comeback, stamped: 0.055, tolerance: 0.05, unit: 'share of games' },
+      { name: 'cheap shock (shipped magnitude): determination', value: cheap.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'cheap shock: comeback', value: cheap.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'positional shock, shipped magnitude (2 @ d6<=1): determination', value: posShipped.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'positional shock, shipped magnitude: comeback', value: posShipped.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'positional shock, low (8 @ d6<=4): determination', value: posLow.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'positional shock, low: comeback', value: posLow.comeback, stamped: 0, tolerance: 0.05, unit: 'share of games' },
+      { name: 'positional shock, high (14 @ d6<=4): determination', value: posHigh.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'positional shock, high: comeback', value: posHigh.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
     ];
   },
 

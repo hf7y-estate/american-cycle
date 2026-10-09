@@ -17,7 +17,11 @@ import type { Claim, Finding } from './types.ts';
  *  alone a second time. Every point below is therefore re-measured against
  *  this pool's own baseline and positional-alone reading, not #237's file --
  *  the two files' determination numbers are not comparable across pools (see
- *  `impeachment-backfire-strain.ts`'s own note on this). */
+ *  `impeachment-backfire-strain.ts`'s own note on this). Nor are they
+ *  comparable across TIME: hf7y/american-cycle#244 (option 2) doubled
+ *  `maxYears` to 32 here for finer quantization (1/32-year steps instead of
+ *  1/16), resolution only -- the shipped `tuned.json` stays at 16 for actual
+ *  play. */
 const AGENTS = ['Greedy', 'Lookahead', 'Impeacher', 'HeterodoxSpecialist'];
 const SEEDS = Array.from({ length: sample(200) }, (_, i) => 1030400 + i);
 const HEALTHY_LOW = 0.75, HEALTHY_HIGH = 0.85;
@@ -34,28 +38,30 @@ export const finding: Finding = {
     + 'be tested at all?',
 
   headline:
-    "REDUNDANT, NOT ADDITIVE -- PAIRING LANDS ON THE SAME TWO POINTS EITHER ARM ALONE ALREADY DID, NEVER "
-    + 'BETWEEN THEM, AND NEVER INSIDE THE BAND. Under the Impeacher-seated pool (needed for the backfire arm '
-    + 'to fire at all), the baseline with both brakes off already reads 0.875 -- not #237/#242\'s shared 0.625 '
-    + 'baseline, because swapping SenateFlood for Impeacher is itself not a neutral change to this metric. '
-    + 'Positional alone (shipped magnitude) on this pool also reads 0.875, not the 0.625 it read under the '
-    + 'canonical pool -- so on THIS pool positional-alone is already indistinguishable from baseline. Backfire '
-    + 'alone (strain-scaled, shipped magnitude) reads 0.875, matching #242 exactly. Both on together, at '
-    + 'shipped magnitudes: 0.875. Both on with positional pushed to #237\'s high point (14 @ d6<=4, the one '
-    + 'setting that moved anything under the canonical pool): still 0.875. Every point measured on this pool, '
-    + 'brakes on or off, alone or paired, is the same value to four decimal places. Comeback stays positive '
-    + 'throughout (3-6%), so that half of the bar was never the obstacle. This settles the question #84\'s '
-    + 'ruling asked: the two arms are not redundant with each other in the sense of cancelling or compounding '
-    + '-- they are redundant with DOING NOTHING, on this pool, because something about seating an agent that '
-    + 'actually attempts impeachment already pins determination at the top attractor before either brake is '
-    + 'switched on. Re-deriving the determination metric itself, or asking why swapping one of four agents '
-    + 'moves a metric supposedly about the whole field\'s dynamics, is the shared next step -- not a third '
-    + 'brake shape, and not further sweeping of these two.',
-  stampedAt: '2026-09-08T18:00:00Z',
-  stampedOn: '686b2c1',
+    'hf7y/american-cycle#244 OPTION 2 APPLIED (resolution only, maxYears 16->32): STILL REDUNDANT AT FOUR OF '
+    + 'FIVE POINTS, BUT THE ONE EXCEPTION NOW LANDS INSIDE THE BAND. Both off, positional alone, backfire alone, '
+    + "and both on at shipped magnitudes all moved together to the SAME new ceiling (0.94, matching the other "
+    + "two arms' own option-2 reruns) -- still redundant with each other and with doing nothing, same "
+    + 'conclusion as the 2026-09-08 stamp, just at a higher number. But the fifth point -- both brakes on, '
+    + "positional pushed to #237's high magnitude (14 @ d6<=4) -- is NOT at the ceiling with the rest: it reads "
+    + "0.81, inside the healthy 0.75-0.85 band, the only point across all three #244-rerun arms "
+    + '(`positional-shock-brake.ts`, `impeachment-backfire-strain.ts`, this file) to land there. That is one '
+    + 'point out of five on one file, not a calibrated brake -- it was not independently re-swept at this '
+    + 'resolution to see whether it holds up or was a single lucky seed-block draw, and this restamp does not '
+    + 'claim it did. Comeback is nearer zero across the board (0, 0.01, 0.01, 0.01, 0) than the 2026-09-08 '
+    + 'stamps\' 3-6%, consistent with the halfway mark comeback is measured against now sitting twice as deep '
+    + 'into a longer game, not a new finding about either brake. Flagging the in-band point on #244/#84 rather '
+    + 'than chasing it further here -- whether "both brakes on, positional at the high end, 32-year games" is a '
+    + "reproducible setting or a single favorable draw is a question for whoever picks up #244's still-open "
+    + 'band ruling next, not something a resolution-only rerun decides by itself.',
+  stampedAt: '2026-10-09T17:41:55Z',
+  stampedOn: '243aeb1',
 
   predicate(): Claim[] {
-    const base = loadConfig('tuned.json');
+    const shipped84 = loadConfig('tuned.json');
+    // hf7y/american-cycle#244 option 2: re-run at maxYears:32, resolution
+    // only -- tuned.json itself stays at 16 for actual play.
+    const base: Config = { ...shipped84, game: { ...shipped84.game, maxYears: 32 } };
     const cards = loadPacks(BALANCE_PACKS);
     const run = (cfg: Config) => runawayMetrics(SEEDS, AGENTS, cards, cfg);
 
@@ -82,16 +88,16 @@ export const finding: Finding = {
     const bothAtHigh = run(bothHigh);
 
     return [
-      { name: 'both off (baseline, Impeacher-seated pool): determination', value: off.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'both off: comeback', value: off.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'positional only, shipped magnitude: determination', value: posOnly.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'positional only: comeback', value: posOnly.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'backfire only, strain-scaled shipped magnitude: determination', value: backOnly.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'backfire only: comeback', value: backOnly.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'both on, shipped magnitudes: determination', value: bothAtShipped.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'both on, shipped magnitudes: comeback', value: bothAtShipped.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'both on, positional at high point (14 @ d6<=4): determination', value: bothAtHigh.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'both on, positional at high point: comeback', value: bothAtHigh.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
+      { name: 'both off (baseline, Impeacher-seated pool): determination', value: off.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'both off: comeback', value: off.comeback, stamped: 0, tolerance: 0.05, unit: 'share of games' },
+      { name: 'positional only, shipped magnitude: determination', value: posOnly.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'positional only: comeback', value: posOnly.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'backfire only, strain-scaled shipped magnitude: determination', value: backOnly.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'backfire only: comeback', value: backOnly.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'both on, shipped magnitudes: determination', value: bothAtShipped.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'both on, shipped magnitudes: comeback', value: bothAtShipped.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'both on, positional at high point (14 @ d6<=4): determination', value: bothAtHigh.determination, stamped: 0.81, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'both on, positional at high point: comeback', value: bothAtHigh.comeback, stamped: 0, tolerance: 0.05, unit: 'share of games' },
     ];
   },
 
