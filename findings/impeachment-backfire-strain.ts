@@ -14,7 +14,10 @@ import type { Claim, Finding } from './types.ts';
  *  would never once fire under it and this finding would measure nothing.
  *  The determination/comeback readings below are therefore a fresh float
  *  taken on THIS pool, not the other findings' 0.625 -- comparable across
- *  the rows of this finding, not across files. */
+ *  the rows of this finding, not across files. Also not comparable across
+ *  TIME: hf7y/american-cycle#244 (option 2) doubled `maxYears` to 32 here
+ *  for finer quantization (1/32-year steps instead of 1/16), resolution
+ *  only -- the shipped `tuned.json` stays at 16 for actual play. */
 const AGENTS = ['Greedy', 'Lookahead', 'Impeacher', 'HeterodoxSpecialist'];
 const SEEDS = Array.from({ length: sample(200) }, (_, i) => 1030400 + i);
 const HEALTHY_LOW = 0.75, HEALTHY_HIGH = 0.85;
@@ -49,27 +52,27 @@ export const finding: Finding = {
     + 'above zero, on 200+ seeds?',
 
   headline:
-    'C7 IS INSENSITIVE TO THIS LEVER ENTIRELY -- STRAIN-SCALED, FLAT, OR OFF ALL READ THE IDENTICAL 87.5%. '
-    + 'With `Impeacher` seated specifically to make the mechanism fire (the canonical C7 pool never triggers it '
-    + "at all, see the comment on this file's `AGENTS`), failed convictions average 6.4 per game -- the "
-    + 'mechanism is not rare here, unlike the concern that shaped the sweep. But determination reads exactly '
-    + '0.875 at every point measured: `impeachBackfirePips: 0` (the brake fully OFF), the shipped flat 2 pips, '
-    + 'strain-scaled at the shipped magnitude, and strain-scaled at 20x the shipped magnitude (40 pips) are all '
-    + '0.875, to four decimal places, over the same 200 seeds. Comeback stays positive throughout (3-6%), so '
-    + "that half of #84's bar was never the obstacle. This is a sharper version of #237's own result: the "
-    + "positional shock at least MOVED between two attractor values (0.625/0.875) as its magnitude swept; this "
-    + "lever, strain-scaled or not, never leaves 0.875 even at zero. Read plainly: under a pool aggressive "
-    + 'enough to actually attempt removal, something else already pins this metric at the top of #237\'s '
-    + "two-value spectrum, and the backfire's size or shape is not a variable that number is listening to. "
-    + '#84 stays open. Neither of its two named candidate arms has moved C7, and both failures now look like '
-    + 'the same failure -- a bimodal, saturating metric -- rather than two independent misses; re-deriving '
-    + 'the determination metric itself, floated in #237\'s own note, is the shared next step rather than a '
-    + 'third brake shape.',
-  stampedAt: '2026-09-08T11:30:00Z',
-  stampedOn: 'aebde8b',
+    'hf7y/american-cycle#244 OPTION 2 APPLIED (resolution only, maxYears 16->32): STILL INSENSITIVE TO THIS '
+    + "LEVER, AND THE CEILING MOVED WITH THE OTHER ARMS'. Off, flat, strain-scaled at shipped magnitude and "
+    + 'strain-scaled at 20x all read the identical 0.94 (30/32 years) -- not 0.875 as at the old 16-year '
+    + 'resolution, the same new ceiling `positional-shock-brake.ts` moved to under this same option-2 rerun. '
+    + 'Failed convictions average 8.2 per game under this pool (the longer game gives the mechanism more '
+    + 'chances to fire, not fewer), so the lever is exercised harder, not less, at the coarser-seeming but now '
+    + "longer game -- and it still moves nothing. Comeback drops to at-or-near zero at every point (0.01, 0, "
+    + "0.01, 0.01) against the 2026-09-08 stamps' 3-6%, consistent with comeback being measured against a "
+    + "halfway mark that is now twice as deep into the game, not a new finding about the lever itself. Doubling "
+    + "resolution did not land this between the old two points either; like #237's arm, it moved the whole set "
+    + "further from the 0.75-0.85 band. #84 stays open; this is more of the same signal #237 already flagged, "
+    + 'not new information about this specific lever -- see `positional-shock-brake.ts` for the shared read on '
+    + 'what re-running at 32 years actually showed.',
+  stampedAt: '2026-10-09T17:41:55Z',
+  stampedOn: '243aeb1',
 
   predicate(): Claim[] {
-    const base = loadConfig('tuned.json');
+    const shipped84 = loadConfig('tuned.json');
+    // hf7y/american-cycle#244 option 2: re-run at maxYears:32, resolution
+    // only -- tuned.json itself stays at 16 for actual play.
+    const base: Config = { ...shipped84, game: { ...shipped84.game, maxYears: 32 } };
     const cards = loadPacks(BALANCE_PACKS);
     const run = (cfg: Config) => runawayMetrics(SEEDS, AGENTS, cards, cfg);
 
@@ -88,15 +91,15 @@ export const finding: Finding = {
     const rate = conviction(cards, flatCfg);
 
     return [
-      { name: 'off (impeachBackfirePips=0): determination', value: off.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'off: comeback', value: off.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'flat (shipped 2 pips): determination', value: flat.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'flat: comeback', value: flat.comeback, stamped: 0.06, tolerance: 0.05, unit: 'share of games' },
-      { name: 'strain-scaled, shipped magnitude (2): determination', value: shipped.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'strain-scaled, shipped magnitude: comeback', value: shipped.comeback, stamped: 0.045, tolerance: 0.05, unit: 'share of games' },
-      { name: 'strain-scaled, high magnitude (40): determination', value: high.determination, stamped: 0.875, tolerance: 0.1, unit: 'fraction of game length' },
-      { name: 'strain-scaled, high magnitude: comeback', value: high.comeback, stamped: 0.03, tolerance: 0.05, unit: 'share of games' },
-      { name: 'failed convictions per game (flat config)', value: rate.fails, stamped: 6.42, tolerance: 1.5, unit: 'backfires/game' },
+      { name: 'off (impeachBackfirePips=0): determination', value: off.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'off: comeback', value: off.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'flat (shipped 2 pips): determination', value: flat.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'flat: comeback', value: flat.comeback, stamped: 0, tolerance: 0.05, unit: 'share of games' },
+      { name: 'strain-scaled, shipped magnitude (2): determination', value: shipped.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'strain-scaled, shipped magnitude: comeback', value: shipped.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'strain-scaled, high magnitude (40): determination', value: high.determination, stamped: 0.94, tolerance: 0.1, unit: 'fraction of game length' },
+      { name: 'strain-scaled, high magnitude: comeback', value: high.comeback, stamped: 0.01, tolerance: 0.05, unit: 'share of games' },
+      { name: 'failed convictions per game (flat config)', value: rate.fails, stamped: 8.18, tolerance: 1.5, unit: 'backfires/game' },
       { name: 'successful convictions per game (flat config)', value: rate.successes, stamped: 0, tolerance: 0.1, unit: 'removals/game' },
     ];
   },
